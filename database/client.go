@@ -14,7 +14,7 @@ import (
 var Instance *gorm.DB
 var dbError error
 
-func Connect(){
+func Connect() {
 	// Load environment variables from .env file
 	err := godotenv.Load()
 
@@ -34,11 +34,12 @@ func Connect(){
 
 	// Connect to the database
 	Instance, dbError = gorm.Open(mysql.Open(connectionString), &gorm.Config{})
-	
+
 	if dbError != nil {
 		log.Fatal(dbError)
 		panic("Cannot connect to Database!")
 	}
+
 	log.Println("Connected to Database!")
 }
 
