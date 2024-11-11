@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 )
 
@@ -29,9 +29,9 @@ func init() {
 }
 
 type JWTClaim struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	jwt.StandardClaims
+	Username             string `json:"username"`
+	Email                string `json:"email"`
+	jwt.RegisteredClaims        // Refractor for golang-jwt, instead of jwt.go
 }
 
 // Generates a JWT jey based on the provided data
@@ -40,8 +40,8 @@ func GenerateJWT(email string, username string) (tokenString string, err error) 
 	claims := &JWTClaim{
 		Email:    email,
 		Username: username,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
 
@@ -72,9 +72,10 @@ func ValidateToken(signedToken string) (err error) {
 		return
 	}
 
-	if claims.ExpiresAt < time.Now().Local().Unix() {
+	if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
 		err = errors.New("token expired")
 		return
 	}
+
 	return
 }
