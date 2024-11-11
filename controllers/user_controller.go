@@ -28,11 +28,11 @@ func RegisterUser(context *gin.Context) {
 	}
 
 	// Once hashed, the user data is stored into the DB using the GORM global instance.
-	record := database.Instance.Create(&user) 
+	record := database.Instance.Create(&user)
 	if record.Error != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": record.Error.Error()})
-    	context.Abort()
-    	return
+		context.Abort()
+		return
 	}
 
 	// Returns status code 200 along with the created user data
