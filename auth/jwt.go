@@ -24,8 +24,7 @@ func init() {
 	if secretKey == "" {
 		log.Fatal("SECRET_KEY is not set")
 	}
-	jwtKey = []byte(secretKey)                     // Convert the string to []byte here
-	log.Printf("SECRET_KEY loaded: %s", secretKey) // You may log it as a string for debugging
+	jwtKey = []byte(secretKey)
 }
 
 type JWTClaim struct {
@@ -47,13 +46,29 @@ func GenerateJWT(email string, username string) (tokenString string, err error) 
 
 	// Signs JWT with encryption algorithm provided "HS256"
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	log.Print(jwtKey)
 	tokenString, err = token.SignedString(jwtKey)
 
 	return
 }
 
-func ValidateToken(signedToken string) (err error) {
+// Generates a JWT Refresh token.
+func GenerateRefreshToken(email string, username string) (refreshTokenString string, err error) {
+	expirationTime := time.Now().Add(1 * 24 * time.Hour)
+	claims := &JWTClaim{
+		Email:    email,
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
+	}
+
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshTokenString, err = refreshToken.SignedString(jwtKey)
+
+	return
+}
+
+func ValidateToken(signedToken string) (claims *JWTClaim, err error) {
 	token, err := jwt.ParseWithClaims(
 		signedToken,
 		&JWTClaim{},

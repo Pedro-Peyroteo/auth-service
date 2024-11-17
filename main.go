@@ -28,6 +28,7 @@ func initRouter() *gin.Engine {
 	{
 		// Routes endpoint to the correspondant controller
 		api.POST("/token", controllers.GenerateToken)
+		api.POST("/token/refresh", controllers.GenerateRefreshToken)
 		api.POST("/user/register", controllers.RegisterUser)
 		// Adds a protected route, using the middleware implemmented
 		secured := api.Group("/secured").Use(middleware.Auth())

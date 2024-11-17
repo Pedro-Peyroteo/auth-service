@@ -20,7 +20,9 @@ func Auth() gin.HandlerFunc {
 		}
 
 		// Validates the JWT token
-		err := auth.ValidateToken(tokenString)
+		claims, err := auth.ValidateToken(tokenString)
+
+		println(claims) // To improve..
 
 		if err != nil {
 			context.JSON(401, gin.H{"error": err.Error()})
