@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
 )
 
@@ -24,14 +24,13 @@ func init() {
 	if secretKey == "" {
 		log.Fatal("SECRET_KEY is not set")
 	}
-	jwtKey = []byte(secretKey)                     // Convert the string to []byte here
-	log.Printf("SECRET_KEY loaded: %s", secretKey) // You may log it as a string for debugging
+	jwtKey = []byte(secretKey)
 }
 
 type JWTClaim struct {
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	jwt.StandardClaims
+	Username             string `json:"username"`
+	Email                string `json:"email"`
+	jwt.RegisteredClaims        // Refractor for golang-jwt, instead of jwt.go
 }
 
 // Generates a JWT jey based on the provided data
@@ -40,20 +39,36 @@ func GenerateJWT(email string, username string) (tokenString string, err error) 
 	claims := &JWTClaim{
 		Email:    email,
 		Username: username,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expirationTime.Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
 	}
 
 	// Signs JWT with encryption algorithm provided "HS256"
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	log.Print(jwtKey)
 	tokenString, err = token.SignedString(jwtKey)
 
 	return
 }
 
-func ValidateToken(signedToken string) (err error) {
+// Generates a JWT Refresh token.
+func GenerateRefreshToken(email string, username string) (refreshTokenString string, err error) {
+	expirationTime := time.Now().Add(1 * 24 * time.Hour)
+	claims := &JWTClaim{
+		Email:    email,
+		Username: username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
+	}
+
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	refreshTokenString, err = refreshToken.SignedString(jwtKey)
+
+	return
+}
+
+func ValidateToken(signedToken string) (claims *JWTClaim, err error) {
 	token, err := jwt.ParseWithClaims(
 		signedToken,
 		&JWTClaim{},
@@ -72,9 +87,10 @@ func ValidateToken(signedToken string) (err error) {
 		return
 	}
 
-	if claims.ExpiresAt < time.Now().Local().Unix() {
+	if claims.ExpiresAt != nil && claims.ExpiresAt.Time.Before(time.Now()) {
 		err = errors.New("token expired")
 		return
 	}
+
 	return
 }
