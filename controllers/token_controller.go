@@ -4,9 +4,12 @@ import (
 	"auth-service/auth"
 	"auth-service/database"
 	"auth-service/models"
+	"errors"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type TokenRequest struct {
@@ -29,7 +32,13 @@ func GenerateToken(context *gin.Context) {
 
 	// Checks for possible errors on query
 	if record.Error != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"error": record.Error.Error()})
+		// If a  record is not found, logs the error
+		if !errors.Is(record.Error, gorm.ErrRecordNotFound) {
+			log.Printf("Database error: %v", record.Error)
+		}
+
+		// Return a 401 code to prevent enumeration attacks
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		context.Abort()
 		return
 	}
@@ -37,7 +46,7 @@ func GenerateToken(context *gin.Context) {
 	// Validates password
 	credentialError := user.CheckPassword(request.Password)
 	if credentialError != nil {
-		context.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		context.Abort()
 		return
 	}
@@ -51,7 +60,7 @@ func GenerateToken(context *gin.Context) {
 	}
 
 	// Generates JWT refresh token and checks for possible errors
-	refreshToken, err := auth.GenerateRefreshToken(user.Email, user.Password)
+	refreshToken, err := auth.GenerateRefreshToken(user.Email, user.Username)
 	if err != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		context.Abort()
@@ -59,12 +68,8 @@ func GenerateToken(context *gin.Context) {
 	}
 
 	// Stores refresh token in a cookie for increased security
-	// Set "Secure property" to true in prod.
-	// context.SetCookie("refresh_token", refreshToken, 7*24*3600, "/", "localhost", true, true, map[string]string{"SameSite": "Strict"})
-
-	context.SetCookie("refresh_token", refreshToken, 7*24*3600, "/", "localhost", false, true)
-
-	context.JSON(http.StatusOK, gin.H{"access_token": accessToken, "refresh_token": refreshToken})
+	context.SetCookie("refresh_token", refreshToken, 7*24*3600, "/", "localhost", true, true)
+	context.JSON(http.StatusOK, gin.H{"access_token": accessToken})
 }
 
 func GenerateRefreshToken(context *gin.Context) {
