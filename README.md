@@ -9,4 +9,6 @@ Auth Service is a centralized authentication service designed to handle login, u
 - **Token Refresh**: Refresh expired JWT access tokens using a refresh token.
 - **CORS Support**: Configurable CORS settings for secure requests.
 
-> Still a Work In Proggress
+
+> [!NOTE]
+> Still a Work In Proggress.
