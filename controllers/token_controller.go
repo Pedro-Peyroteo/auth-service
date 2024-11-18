@@ -38,7 +38,7 @@ func GenerateToken(context *gin.Context) {
 		}
 
 		// Return a 401 code to prevent enumeration attacks
-		context.JSON(http.StatusUnauthorized, gin.H{"error": "invalide username or password"})
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		context.Abort()
 		return
 	}
@@ -46,7 +46,7 @@ func GenerateToken(context *gin.Context) {
 	// Validates password
 	credentialError := user.CheckPassword(request.Password)
 	if credentialError != nil {
-		context.JSON(http.StatusUnauthorized, gin.H{"error": "invalide username or password"})
+		context.JSON(http.StatusUnauthorized, gin.H{"error": "invalid username or password"})
 		context.Abort()
 		return
 	}
