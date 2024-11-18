@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/joho/godotenv"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var Instance *gorm.DB
@@ -32,8 +34,18 @@ func Connect() {
 		os.Getenv("DB_NAME"),
 	)
 
+	// Create a custom logger with Silent log level
+	customLogger := logger.New(
+		log.New(os.Stdout, "\r\n", log.LstdFlags),
+		logger.Config{
+			SlowThreshold: time.Second,   // Slow SQL threshold
+			LogLevel:      logger.Silent, // Set log level to Silent
+			Colorful:      true,          // Optional: Colorful output
+		},
+	)
+
 	// Connect to the database
-	Instance, dbError = gorm.Open(mysql.Open(connectionString), &gorm.Config{})
+	Instance, dbError = gorm.Open(mysql.Open(connectionString), &gorm.Config{Logger: customLogger})
 
 	if dbError != nil {
 		log.Fatal(dbError)
